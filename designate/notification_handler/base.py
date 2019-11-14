@@ -153,6 +153,10 @@ class BaseAddressHandler(NotificationHandler):
             event_data = data.copy()
             event_data.update(self._get_ip_data(addr))
 
+            # catch _ in project names, which may upset some dns clients
+            if event_data.get('project', None):
+                event_data['project'] = event_data['project'].replace('_', '-')
+
             if addr['version'] == 4:
                 format = self._get_formatv4()
             else:
