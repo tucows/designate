@@ -585,12 +585,27 @@ class Service(service.RPCService):
                                           set_delayed_notify=True)
 
     def _delete_ns(self, context, zone, ns_record):
-        ns_recordset = self.find_recordset(
-            context, criterion={'zone_id': zone['id'], 'type': "NS"})
+        recordsets = self.find_recordsets(
+            context, criterion={'zone_id': zone['id'], 'type': "NS"}
+        )
 
-        for record in copy.deepcopy(ns_recordset.records):
+        managed = []
+        for rs in recordsets:
+            if rs.managed:
+                managed.append(rs)
+
+        if len(managed) != 1:
+            raise exceptions.RecordSetNotFound("No valid recordset found")
+
+        ns_recordset = managed[0]
+
+        to_remove = []
+        for record in ns_recordset.records:
             if record.data == ns_record:
-                ns_recordset.records.remove(record)
+                to_remove.append(record)
+
+        for record in to_remove:
+            ns_recordset.records.remove(record)
 
         self._update_recordset_in_storage(context, zone, ns_recordset,
                                           set_delayed_notify=True)
